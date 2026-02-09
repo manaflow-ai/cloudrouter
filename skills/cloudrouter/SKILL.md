@@ -1,6 +1,10 @@
 ---
 name: cloudrouter
-description: Manage cloud development sandboxes with cloudrouter. Create, sync, and access remote VMs. Includes browser automation via Chrome CDP for scraping, testing, and web interaction.
+description: Manage cloud development sandboxes with cloudrouter. Create, sync, and access remote VMs. Includes browser automation via Chrome CDP for scraping, testing, and web interaction. Use when asked to create a sandbox, spin up a dev environment, run code in the cloud, automate a browser, or interact with remote VMs.
+license: MIT
+metadata:
+  author: manaflow-ai
+  version: "0.0.1"
 ---
 
 # cloudrouter - Cloud Sandboxes for Development
