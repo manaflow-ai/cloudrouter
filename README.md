@@ -87,29 +87,29 @@ cloudrouter extend <id>                # Extend sandbox timeout
 
 ```bash
 cloudrouter start ./my-project
-cloudrouter code cloudrouter_abc123
-cloudrouter pty cloudrouter_abc123            # npm install && npm run dev
+cloudrouter code cr_abc123
+cloudrouter pty cr_abc123            # npm install && npm run dev
 ```
 
 ### Browser automation: login flow
 
 ```bash
-cloudrouter computer open cloudrouter_abc123 "https://example.com/login"
-cloudrouter computer snapshot cloudrouter_abc123
+cloudrouter computer open cr_abc123 "https://example.com/login"
+cloudrouter computer snapshot cr_abc123
 # @e1 [input] Email, @e2 [input] Password, @e3 [button] Sign In
 
-cloudrouter computer fill cloudrouter_abc123 @e1 "user@example.com"
-cloudrouter computer fill cloudrouter_abc123 @e2 "password123"
-cloudrouter computer click cloudrouter_abc123 @e3
-cloudrouter computer screenshot cloudrouter_abc123 result.png
+cloudrouter computer fill cr_abc123 @e1 "user@example.com"
+cloudrouter computer fill cr_abc123 @e2 "password123"
+cloudrouter computer click cr_abc123 @e3
+cloudrouter computer screenshot cr_abc123 result.png
 ```
 
 ### Web scraping
 
 ```bash
-cloudrouter computer open cloudrouter_abc123 "https://example.com/data"
-cloudrouter computer snapshot cloudrouter_abc123
-cloudrouter computer screenshot cloudrouter_abc123
+cloudrouter computer open cr_abc123 "https://example.com/data"
+cloudrouter computer snapshot cr_abc123
+cloudrouter computer screenshot cr_abc123
 ```
 
 ## Tips
@@ -119,7 +119,7 @@ cloudrouter computer screenshot cloudrouter_abc123
 - Use `-v` for verbose output
 - Always run `snapshot` before interacting with elements
 - Prefer element refs (`@e1`) over CSS selectors for reliability
-- Sandbox IDs look like `cloudrouter_abc12345` -- get them from `cloudrouter ls`
+- Sandbox IDs look like `cr_abc12345` -- get them from `cloudrouter ls`
 
 ## License
 
