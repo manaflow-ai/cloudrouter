@@ -132,6 +132,10 @@ cloudrouter computer screenshot cr_abc123
 - Prefer element refs (`@e1`) over CSS selectors for reliability
 - Sandbox IDs look like `cr_abc12345` -- get them from `cloudrouter ls`
 
+## Built with Manaflow
+
+cloudrouter is built on top of [Manaflow](https://github.com/manaflow-ai/manaflow) — an open-source framework for building AI agent skills. If you find this useful, please consider giving it a ⭐ on GitHub!
+
 ## License
 
 MIT
