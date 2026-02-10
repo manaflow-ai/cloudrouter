@@ -1,6 +1,6 @@
 # cloudrouter
 
-Agent skill for managing cloud development sandboxes with [cloudrouter](https://cloudrouter.sh). Gives your AI coding agent the ability to create, sync, and access remote VMs with built-in browser automation via Chrome CDP.
+Agent skill for managing cloud development sandboxes with [cloudrouter](https://cloudrouter.dev). Gives your AI coding agent the ability to create, sync, and access remote VMs with built-in browser automation via Chrome CDP.
 
 ## Install
 
