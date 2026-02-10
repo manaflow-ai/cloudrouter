@@ -184,6 +184,12 @@ cloudrouter exec <id> <command>       # Execute a one-off command
 
 Upload and download files or directories between local machine and sandbox.
 
+**Command signatures:**
+- `cloudrouter upload <id> [local-path]` — accepts 1-2 positional args: sandbox ID and optional local path
+- `cloudrouter download <id> [local-path]` — accepts 1-2 positional args: sandbox ID and optional local path
+- Use `-r <remote-path>` flag to specify a non-default remote directory (default: `/home/user/workspace`)
+- **Do NOT pass remote paths as positional arguments** — this will error. Always use the `-r` flag.
+
 ```bash
 # Upload (local -> sandbox)
 cloudrouter upload <id>                            # Upload current dir to /home/user/workspace
@@ -197,10 +203,12 @@ cloudrouter upload <id> . -e "*.log"               # Exclude patterns
 # Download (sandbox -> local)
 cloudrouter download <id>                          # Download workspace to current dir
 cloudrouter download <id> ./output                 # Download workspace to ./output
-cloudrouter download <id> . -r /home/user/app      # Download from specific remote directory
+cloudrouter download <id> ./output -r /home/user/app  # Download specific remote dir to ./output
 ```
 
-> **Warning:** The `-r` flag for download expects a **directory** path, not a file path. To download a single file, download its parent directory and then access the file locally.
+> **Warning:** The `-r` flag expects a **directory** path, not a file path. To download a single file, download its parent directory and then access the file locally.
+>
+> **Common mistake:** `cloudrouter download <id> /remote/path /local/path` — this passes 3 positional args and will fail. Use `cloudrouter download <id> /local/path -r /remote/path` instead.
 
 ### Browser Automation (cloudrouter computer)
 
