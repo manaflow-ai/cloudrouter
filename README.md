@@ -132,6 +132,10 @@ cloudrouter computer screenshot cr_abc123
 - Prefer element refs (`@e1`) over CSS selectors for reliability
 - Sandbox IDs look like `cr_abc12345` -- get them from `cloudrouter ls`
 
+## CLI Source Code
+
+The cloudrouter CLI source code lives in [`packages/cloudrouter`](https://github.com/manaflow-ai/manaflow/tree/main/packages/cloudrouter) in the [manaflow-ai/manaflow](https://github.com/manaflow-ai/manaflow) repo. If you find it useful, give it a ⭐!
+
 ## License
 
 MIT
