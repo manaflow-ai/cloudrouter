@@ -214,6 +214,8 @@ cloudrouter download <id> ./output -r /home/user/app  # Download specific remote
 
 Control Chrome browser via CDP in the sandbox's VNC desktop.
 
+> **Startup delay:** Chrome CDP may not be ready immediately after sandbox creation. If a `computer` command fails right after `cloudrouter start`, wait a few seconds and retry. This is rare but expected — Chrome needs a moment to boot inside the sandbox.
+
 #### Navigation
 
 ```bash
