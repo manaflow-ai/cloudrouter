@@ -310,6 +310,24 @@ cloudrouter stop cr_abc123      # Stop (can restart later)
 cloudrouter delete cr_abc123    # Delete permanently
 ```
 
+## Surfacing URLs and Screenshots
+
+Proactively share authenticated sandbox URLs and screenshots with the user when it helps build trust or verify progress. The user cannot see what's happening inside the sandbox — showing them evidence of your work is important.
+
+**When to surface URLs:**
+- After creating a sandbox or setting up an environment, share the VS Code URL (`cloudrouter code <id>`) so the user can inspect the workspace
+- After deploying or starting a service, share the VNC URL (`cloudrouter vnc <id>`) so the user can see it running
+- When Jupyter is running, share the Jupyter URL so the user can verify notebooks
+- Whenever the user might want to verify, inspect, or interact with the sandbox themselves
+
+**When to take and share screenshots:**
+- After completing a visual task (e.g., UI changes, web app deployment) — take a screenshot with `cloudrouter computer screenshot <id> out.png` and show it
+- When something looks wrong or unexpected — screenshot it for the user to confirm
+- After browser automation steps that produce visible results (form submissions, page navigations, login flows)
+- When the user asks you to check or verify something visually
+
+**General rule:** If you think the user would benefit from seeing proof of what you did, surface the URL or screenshot. Err on the side of showing more rather than less — it builds trust and keeps the user in the loop.
+
 ## Security: Dev Server URLs
 
 **CRITICAL: NEVER share or output raw E2B port-forwarded URLs.**
@@ -321,7 +339,7 @@ When a dev server runs in the sandbox (e.g., Vite on port 5173, Next.js on port 
 - **NEVER** construct or guess E2B port URLs from sandbox metadata
 - **ALWAYS** tell the user to view dev servers through VNC: `cloudrouter vnc <id>`
 - VNC is protected by token authentication (`?tkn=`) and is the only safe way to view dev server output
-- Only VSCode URLs (`cloudrouter code <id>`) and VNC URLs (`cloudrouter vnc <id>`) should be shared — these have proper token auth
+- **DO** share authenticated URLs: VS Code (`cloudrouter code <id>`), VNC (`cloudrouter vnc <id>`), and Jupyter URLs — these have proper token auth and are safe to surface
 
 **When a dev server is started:**
 ```
