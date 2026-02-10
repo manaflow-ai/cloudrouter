@@ -145,10 +145,8 @@ Multi-GPU: append `:N` to the GPU type, e.g. `--gpu H100:2` for 2x H100.
     --git <repo>        Git repository URL or user/repo shorthand
 -b, --branch <branch>   Git branch to clone
 -p, --provider <name>   Sandbox provider: e2b (default), modal
--T, --template <id>     Template ID (overrides --docker) — DO NOT use template names from `cloudrouter templates`; use --docker or --gpu flags instead
+-T, --template <id>     Template ID (overrides --docker)
 ```
-
-> **Warning:** Do NOT pass template names (e.g. `cmux-devbox-base`) to the `-T` flag. These are display names, not valid E2B template IDs. Use `--docker` for Docker support and `--gpu <type>` for GPU support instead.
 
 ### Managing Sandboxes
 
@@ -195,10 +193,8 @@ cloudrouter upload <id> . -e "*.log"               # Exclude patterns
 # Download (sandbox -> local)
 cloudrouter download <id>                          # Download workspace to current dir
 cloudrouter download <id> ./output                 # Download workspace to ./output
-cloudrouter download <id> . -r /home/user/app      # Download from specific remote directory
+cloudrouter download <id> . -r /home/user/app      # Download from specific remote path
 ```
-
-> **Warning:** The `-r` flag for download expects a **directory** path, not a file path. To download a single file, download its parent directory and then access the file locally.
 
 ### Browser Automation (cloudrouter computer)
 

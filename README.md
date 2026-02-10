@@ -15,6 +15,15 @@ npx skills add manaflow-ai/cloudrouter -a claude-code
 npx skills add manaflow-ai/cloudrouter -a cursor
 ```
 
+### Claude Code Integration
+
+If you cloned this repo, you can install/uninstall the skill directly:
+
+| Command | Description |
+|---------|-------------|
+| `make install` | Install cloudrouter skill to `~/.claude/skills/cloudrouter/` |
+| `make uninstall` | Remove cloudrouter skill from `~/.claude/skills/cloudrouter/` |
+
 ## Prerequisites
 
 You need the cloudrouter CLI installed:
