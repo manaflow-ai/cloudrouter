@@ -45,8 +45,10 @@ cloudrouter - Cloud Development Sandboxes
 If cloudrouter is not installed, help the user install it:
 
 ```bash
-npm install -g cloudrouter
+npm install -g @manaflow-ai/cloudrouter
 ```
+
+This installs both `cloudrouter` and `cr` (shorthand) as CLI commands.
 
 Then authenticate:
 

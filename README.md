@@ -29,8 +29,10 @@ If you cloned this repo, you can install/uninstall the skill directly:
 You need the cloudrouter CLI installed:
 
 ```bash
-npm install -g cloudrouter
+npm install -g @manaflow-ai/cloudrouter
 ```
+
+This installs both `cloudrouter` and `cr` (shorthand) as CLI commands.
 
 Then authenticate:
 
