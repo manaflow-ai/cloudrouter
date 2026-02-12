@@ -32,23 +32,23 @@ cloudrouter - Cloud Development Sandboxes
     cloudrouter vnc <id>                   Open VNC desktop
     cloudrouter stop <id>                  Stop sandbox
 
-  Browser automation:
-    cloudrouter computer open <id> <url>   Navigate to URL
-    cloudrouter computer snapshot <id>     Get accessibility tree
-    cloudrouter computer screenshot <id>   Take screenshot
+  Browser automation (via agent-browser):
+    cloudrouter exec <id> "ab open <url>"       Navigate to URL
+    cloudrouter exec <id> "ab snapshot -i"      Get interactive elements
+    cloudrouter exec <id> "ab screenshot"       Take screenshot
 
   Run "cloudrouter start --help" for all options.
 ```
 
 ## Installation
 
-If cloudrouter is not installed, help the user install it:
+**Always ensure cloudrouter is installed before using any commands.** Run this automatically at the start of any cloudrouter task — do not ask the user, just install it:
 
 ```bash
 npm install -g @manaflow-ai/cloudrouter
 ```
 
-This installs both `cloudrouter` and `cr` (shorthand) as CLI commands.
+This installs both `cloudrouter` and `cr` (shorthand) as CLI commands. The install is idempotent — safe to run even if already installed.
 
 Then authenticate:
 
@@ -211,48 +211,105 @@ cloudrouter download <id> ./output -r /home/user/app  # Download specific remote
 >
 > **Common mistake:** `cloudrouter download <id> /remote/path /local/path` — this passes 3 positional args and will fail. Use `cloudrouter download <id> /local/path -r /remote/path` instead.
 
-### Browser Automation (cloudrouter computer)
+### Browser Automation (agent-browser via `ab`)
 
-Control Chrome browser via CDP in the sandbox's VNC desktop.
+Browser automation uses [agent-browser](https://github.com/vercel-labs/agent-browser) (`ab`), which is pre-installed in every sandbox. All browser commands are run via `cloudrouter exec`:
 
-> **Startup delay:** Chrome CDP may not be ready immediately after sandbox creation. If a `computer` command fails right after `cloudrouter start`, wait a few seconds and retry. This is rare but expected — Chrome needs a moment to boot inside the sandbox.
+```bash
+cloudrouter exec <id> "ab <command>"
+```
+
+> **Startup delay:** The browser may not be ready immediately after sandbox creation. If an `ab` command fails right after `cloudrouter start`, wait a few seconds and retry.
 
 #### Navigation
 
 ```bash
-cloudrouter computer open <id> <url>    # Navigate to URL
-cloudrouter computer back <id>          # Navigate back
-cloudrouter computer forward <id>       # Navigate forward
-cloudrouter computer reload <id>        # Reload page
-cloudrouter computer url <id>           # Get current URL
-cloudrouter computer title <id>         # Get page title
+cloudrouter exec <id> "ab open https://example.com"   # Navigate to URL
+cloudrouter exec <id> "ab back"                        # Navigate back
+cloudrouter exec <id> "ab forward"                     # Navigate forward
+cloudrouter exec <id> "ab reload"                      # Reload page
+cloudrouter exec <id> "ab get url"                     # Get current URL
+cloudrouter exec <id> "ab get title"                   # Get page title
 ```
 
 #### Inspect Page
 
 ```bash
-cloudrouter computer snapshot <id>             # Get accessibility tree with element refs (@e1, @e2...)
-cloudrouter computer screenshot <id>           # Take screenshot (base64 to stdout)
-cloudrouter computer screenshot <id> out.png   # Save screenshot to file
+cloudrouter exec <id> "ab snapshot -i"                 # Interactive elements only (RECOMMENDED)
+cloudrouter exec <id> "ab snapshot"                    # Full accessibility tree
+cloudrouter exec <id> "ab snapshot -s '#main'"         # Scope to a CSS selector
+cloudrouter exec <id> "ab screenshot"                  # Take screenshot
+cloudrouter exec <id> "ab screenshot /tmp/out.png"     # Save screenshot to file
 ```
 
 #### Interact with Elements
 
 ```bash
-cloudrouter computer click <id> <selector>      # Click element (@e1 or CSS selector)
-cloudrouter computer type <id> "text"           # Type into focused element
-cloudrouter computer fill <id> <sel> "value"    # Clear input and fill with value
-cloudrouter computer press <id> <key>           # Press key (Enter, Tab, Escape, etc.)
-cloudrouter computer hover <id> <selector>      # Hover over element
-cloudrouter computer scroll <id> [direction]    # Scroll page (up/down/left/right)
-cloudrouter computer wait <id> <selector>       # Wait for element to appear
+cloudrouter exec <id> "ab click @e1"                   # Click element
+cloudrouter exec <id> "ab fill @e2 'user@example.com'" # Clear input and fill value
+cloudrouter exec <id> "ab type @e3 'some text'"        # Type without clearing
+cloudrouter exec <id> "ab press Enter"                 # Press key (Enter, Tab, Escape, etc.)
+cloudrouter exec <id> "ab hover @e4"                   # Hover over element
+cloudrouter exec <id> "ab scroll down 500"             # Scroll (up/down/left/right, px)
+cloudrouter exec <id> "ab select @e5 'option-value'"   # Select dropdown option
+cloudrouter exec <id> "ab check @e6"                   # Check checkbox
+cloudrouter exec <id> "ab upload @e7 /tmp/file.pdf"    # Upload file
+```
+
+#### Wait Commands
+
+```bash
+cloudrouter exec <id> "ab wait @e1"                    # Wait for element to appear
+cloudrouter exec <id> "ab wait 2000"                   # Wait milliseconds
+cloudrouter exec <id> "ab wait -t 'Success'"           # Wait for text to appear
+cloudrouter exec <id> "ab wait -u '**/dashboard'"      # Wait for URL pattern
+cloudrouter exec <id> "ab wait -l networkidle"         # Wait for network idle
+```
+
+#### Get Information
+
+```bash
+cloudrouter exec <id> "ab get text @e1"                # Get element text content
+cloudrouter exec <id> "ab get value @e2"               # Get input value
+cloudrouter exec <id> "ab get attr @e3 href"           # Get specific attribute
+cloudrouter exec <id> "ab get count '.item'"           # Count matching elements
+cloudrouter exec <id> "ab is visible @e1"              # Check if element is visible
+```
+
+#### Semantic Locators (alternative to refs)
+
+When element refs are unreliable (dynamic pages), use semantic locators:
+
+```bash
+cloudrouter exec <id> "ab find text 'Sign In' click"              # Find by visible text and click
+cloudrouter exec <id> "ab find label 'Email' fill 'user@test.com'"  # Find by label and fill
+cloudrouter exec <id> "ab find role button click --name 'Submit'"  # Find by ARIA role
+cloudrouter exec <id> "ab find placeholder 'Search' type 'query'" # Find by placeholder
 ```
 
 #### Element Selectors
 
 Two ways to select elements:
-- **Element refs** from snapshot: `@e1`, `@e2`, `@e3`...
+- **Element refs** from snapshot: `@e1`, `@e2`, `@e3`... (preferred — from `ab snapshot -i`)
 - **CSS selectors**: `#id`, `.class`, `button[type="submit"]`
+
+#### Tips for Effective Browser Automation
+
+1. **Always snapshot before interacting.** Never use `@e1` without a preceding `ab snapshot -i`. Refs don't exist until you snapshot.
+
+2. **Always re-snapshot after DOM changes.** After any click that navigates, opens a dropdown, submits a form, or triggers dynamic content — snapshot again. Old refs may point to different elements.
+
+3. **Use `snapshot -i` (interactive only).** The `-i` flag returns only actionable elements (buttons, inputs, links), which is far more efficient than the full accessibility tree.
+
+4. **Use `fill` not `type` for form fields.** `fill` clears existing content first, which is almost always what you want. `type` appends to existing content.
+
+5. **Wait after navigation.** After clicking a link or submitting a form, use `ab wait -l networkidle` before snapshotting to ensure the page has fully loaded.
+
+6. **Scope snapshots on complex pages.** Use `ab snapshot -s '#main'` to focus on a specific section rather than getting the entire page tree.
+
+7. **Verify navigation with `get url` / `get title`.** After clicking a link or submitting a form, confirm you landed on the expected page.
+
+8. **Fall back to semantic locators.** If a page is highly dynamic and refs keep going stale, use `ab find text "Submit" click` instead of refs.
 
 ## Sandbox IDs
 
@@ -296,22 +353,28 @@ cloudrouter download cr_abc123 ./output       # Pull files from sandbox to local
 ### Browser automation: Login to a website
 
 ```bash
-cloudrouter computer open cr_abc123 "https://example.com/login"
-cloudrouter computer snapshot cr_abc123
-# Output: @e1 [input] Email, @e2 [input] Password, @e3 [button] Sign In
+cloudrouter exec cr_abc123 "ab open https://example.com/login"
+cloudrouter exec cr_abc123 "ab snapshot -i"
+# Output: @e1 [input type="email"] placeholder="Email"
+#         @e2 [input type="password"] placeholder="Password"
+#         @e3 [button] "Sign In"
 
-cloudrouter computer fill cr_abc123 @e1 "user@example.com"
-cloudrouter computer fill cr_abc123 @e2 "password123"
-cloudrouter computer click cr_abc123 @e3
-cloudrouter computer screenshot cr_abc123 result.png
+cloudrouter exec cr_abc123 "ab fill @e1 'user@example.com'"
+cloudrouter exec cr_abc123 "ab fill @e2 'password123'"
+cloudrouter exec cr_abc123 "ab click @e3"
+cloudrouter exec cr_abc123 "ab wait -l networkidle"
+cloudrouter exec cr_abc123 "ab snapshot -i"              # Re-snapshot after navigation!
+cloudrouter exec cr_abc123 "ab screenshot /tmp/result.png"
 ```
 
 ### Browser automation: Scrape data
 
 ```bash
-cloudrouter computer open cr_abc123 "https://example.com/data"
-cloudrouter computer snapshot cr_abc123   # Get structured accessibility tree
-cloudrouter computer screenshot cr_abc123 # Visual capture
+cloudrouter exec cr_abc123 "ab open https://example.com/data"
+cloudrouter exec cr_abc123 "ab wait -l networkidle"
+cloudrouter exec cr_abc123 "ab snapshot -i"       # Get interactive elements
+cloudrouter exec cr_abc123 "ab get text @e5"      # Extract specific element text
+cloudrouter exec cr_abc123 "ab screenshot"        # Visual capture
 ```
 
 ### Sandbox Lifecycle & Cleanup
@@ -356,7 +419,7 @@ Proactively share authenticated sandbox URLs and screenshots with the user when 
 - Whenever the user might want to verify, inspect, or interact with the sandbox themselves
 
 **When to take and share screenshots:**
-- After completing a visual task (e.g., UI changes, web app deployment) — take a screenshot with `cloudrouter computer screenshot <id> out.png` and show it
+- After completing a visual task (e.g., UI changes, web app deployment) — take a screenshot with `cloudrouter exec <id> "ab screenshot /tmp/out.png"` and show it
 - When something looks wrong or unexpected — screenshot it for the user to confirm
 - After browser automation steps that produce visible results (form submissions, page navigations, login flows)
 - When the user asks you to check or verify something visually
