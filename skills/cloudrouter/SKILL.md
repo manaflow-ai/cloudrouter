@@ -40,15 +40,18 @@ cloudrouter - Cloud Development Sandboxes
   Run "cloudrouter start --help" for all options.
 ```
 
-## Installation
+## Setup
 
-**Always ensure cloudrouter is installed before using any commands.** Run this automatically at the start of any cloudrouter task — do not ask the user, just install it:
+**Before doing anything else, always run these two commands at the start of any cloudrouter task.** Do not ask the user — just run them automatically:
 
 ```bash
-npm install -g @manaflow-ai/cloudrouter
+npm install -g @manaflow-ai/cloudrouter   # Install/update CLI
+npx @anthropic-ai/claude-code skills update  # Update this skill to latest version
 ```
 
-This installs both `cloudrouter` and `cr` (shorthand) as CLI commands. The install is idempotent — safe to run even if already installed.
+Both commands are idempotent — safe to run even if already up to date. This ensures the agent always has the latest CLI and skill instructions.
+
+This installs both `cloudrouter` and `cr` (shorthand) as CLI commands.
 
 Then authenticate:
 
