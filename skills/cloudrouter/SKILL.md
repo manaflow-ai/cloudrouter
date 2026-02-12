@@ -313,11 +313,32 @@ cloudrouter computer snapshot cr_abc123   # Get structured accessibility tree
 cloudrouter computer screenshot cr_abc123 # Visual capture
 ```
 
-### Clean up
+### Sandbox Lifecycle & Cleanup
+
+**Concurrency limit:** Users can have a maximum of **10 concurrently running sandboxes**. If the user is approaching this limit, alert them and suggest cleaning up unused sandboxes. If they need a higher limit, they should contact **founders@manaflow.ai** (the CLI will also display this message when the limit is hit).
+
+**Cleanup rules — be careful and deliberate:**
+
+1. **Only touch sandboxes you created in this session.** Never stop or delete sandboxes you didn't create or don't recognize. If you see unknown sandboxes in `cloudrouter ls`, leave them alone — they may belong to the user or another workflow.
+
+2. **Extend before cleanup.** Before stopping or deleting a sandbox you created, consider whether the user might want to inspect it. If you built something the user should see (a running app, a trained model, browser automation results, etc.), **extend the sandbox** with `cloudrouter extend <id>` so the user has time to check it out. Share the relevant URL (VS Code, VNC, etc.) so they can access it.
+
+3. **Stop, don't delete, by default.** Prefer `cloudrouter stop <id>` over `cloudrouter delete <id>` unless the sandbox is clearly disposable (e.g., a quick test that produced no artifacts). Stopped sandboxes can be restarted; deleted ones are gone forever.
+
+4. **Clean up when you're done.** When your task is complete and the user no longer needs the sandbox, stop it. Don't leave sandboxes running indefinitely — they count toward the concurrency limit.
+
+5. **Monitor concurrency.** Before creating a new sandbox, run `cloudrouter ls` to check how many are running. If there are 8+ active sandboxes, warn the user and ask if any can be stopped before creating another. Never silently hit the limit.
+
+6. **If the limit is reached:** Tell the user they've hit the 10-sandbox concurrency limit. Suggest stopping sandboxes they no longer need. If they need more capacity, direct them to contact **founders@manaflow.ai** to request a higher limit.
+
+**Cleanup workflow:**
 
 ```bash
-cloudrouter stop cr_abc123      # Stop (can restart later)
-cloudrouter delete cr_abc123    # Delete permanently
+cloudrouter ls                  # Check running sandboxes and count
+cloudrouter extend cr_abc123    # Extend sandbox so user can inspect it
+# ... share URLs, let user verify ...
+cloudrouter stop cr_abc123      # Stop when done (can restart later)
+cloudrouter delete cr_abc123    # Delete only if clearly disposable
 ```
 
 ## Surfacing URLs and Screenshots
