@@ -4,12 +4,12 @@ description: Manage cloud development sandboxes with cloudrouter. Create, sync, 
 license: MIT
 metadata:
   author: manaflow-ai
-  version: "0.0.2"
+  version: "0.0.3"
 ---
 
 # cloudrouter - Cloud Sandboxes for Development
 
-cloudrouter manages cloud sandboxes for development. Use these commands to create, manage, and access remote development environments with GPU support, Docker, and browser automation.
+cloudrouter manages cloud sandboxes for development. Use these commands to create, manage, and access remote development environments with GPU support and browser automation.
 
 ## When this skill is invoked
 
@@ -20,7 +20,7 @@ cloudrouter - Cloud Development Sandboxes
 
   Modes:
     cloudrouter start .                    Sync current directory to a cloud sandbox
-    cloudrouter start --docker .           Sandbox with Docker support
+    cloudrouter start --size small .       Smaller sandbox (2 vCPU, 8 GB)
     cloudrouter start --gpu T4 .           Sandbox with T4 GPU (16GB VRAM)
     cloudrouter start --gpu A100 .         Sandbox with A100 GPU (40GB VRAM)
     cloudrouter start --gpu H100 .         Sandbox with H100 GPU (80GB VRAM)
@@ -28,14 +28,16 @@ cloudrouter - Cloud Development Sandboxes
   Manage:
     cloudrouter ls                         List all sandboxes
     cloudrouter code <id>                  Open VS Code in browser
+    cloudrouter jupyter <id>               Open Jupyter Lab in browser
     cloudrouter pty <id>                   Open terminal session
     cloudrouter vnc <id>                   Open VNC desktop
-    cloudrouter stop <id>                  Stop sandbox
+    cloudrouter stop <id>                  Pause sandbox
+    cloudrouter resume <id>                Resume paused sandbox
 
-  Browser automation (via agent-browser):
-    cloudrouter exec <id> "ab open <url>"       Navigate to URL
-    cloudrouter exec <id> "ab snapshot -i"      Get interactive elements
-    cloudrouter exec <id> "ab screenshot"       Take screenshot
+  Browser automation:
+    cloudrouter browser snapshot -i <id>       Get interactive elements
+    cloudrouter browser open <id> <url>        Navigate to URL
+    cloudrouter browser screenshot <id>        Take screenshot
 
   Run "cloudrouter start --help" for all options.
 ```
@@ -46,7 +48,7 @@ cloudrouter - Cloud Development Sandboxes
 
 ```bash
 npm install -g @manaflow-ai/cloudrouter   # Install/update CLI
-npx @anthropic-ai/claude-code skills update  # Update this skill to latest version
+cloudrouter skills update                 # Update this skill to latest version
 ```
 
 Both commands are idempotent — safe to run even if already up to date. This ensures the agent always has the latest CLI and skill instructions.
@@ -67,8 +69,9 @@ If the user hasn't logged in yet, prompt them to run `cloudrouter login` first b
 cloudrouter login                        # Authenticate (opens browser)
 cloudrouter start .                      # Create sandbox from current directory
 cloudrouter start --gpu T4 .             # Create sandbox with GPU
-cloudrouter start --docker .             # Create sandbox with Docker
+cloudrouter start --size small .         # Create smaller sandbox
 cloudrouter code <id>                    # Open VS Code
+cloudrouter jupyter <id>                 # Open Jupyter Lab
 cloudrouter pty <id>                     # Open terminal session
 cloudrouter ls                           # List all sandboxes
 ```
@@ -94,10 +97,13 @@ cloudrouter start ./my-project             # Create from a specific local direct
 cloudrouter start -o .                     # Create and open VS Code immediately
 cloudrouter start -n my-sandbox .          # Create with a custom name
 
-# With Docker support
-cloudrouter start --docker .               # Sandbox with Docker enabled
+# With size presets
+cloudrouter start --size small .           # 2 vCPU, 8 GB RAM, 20 GB disk
+cloudrouter start --size medium .          # 4 vCPU, 16 GB RAM, 40 GB disk
+cloudrouter start --size large .           # 8 vCPU, 32 GB RAM, 80 GB disk (default)
+cloudrouter start --size xlarge .          # 16 vCPU, 64 GB RAM, 160 GB disk
 
-# With GPU
+# With GPU (auto-selects Modal provider)
 cloudrouter start --gpu T4 .               # T4 GPU (16GB VRAM)
 cloudrouter start --gpu L4 .               # L4 GPU (24GB VRAM)
 cloudrouter start --gpu A10G .             # A10G GPU (24GB VRAM)
@@ -105,19 +111,34 @@ cloudrouter start --gpu A100 .             # A100 GPU (40GB VRAM) - requires app
 cloudrouter start --gpu H100 .             # H100 GPU (80GB VRAM) - requires approval
 cloudrouter start --gpu H100:2 .           # Multi-GPU: 2x H100
 
-# With custom resources
-cloudrouter start --cpu 8 .                # Custom CPU cores
-cloudrouter start --memory 16384 .         # Custom memory (MiB)
-cloudrouter start --image ubuntu:22.04 .   # Custom container image
+# With custom resources (override --size values)
+cloudrouter start --cpu 12 --memory 49152 .  # Custom CPU and memory
+cloudrouter start --disk 100 .               # Custom disk size (GB)
+cloudrouter start --image ubuntu:22.04 .     # Custom container image
 
-# From git repo
-cloudrouter start --git user/repo          # Clone a git repo into sandbox
-cloudrouter start --git user/repo -b main  # Clone specific branch
+# From git repo (URL as positional arg or --git flag)
+cloudrouter start https://github.com/user/repo    # Clone git repo directly
+cloudrouter start --git user/repo                  # Clone via shorthand
+cloudrouter start --git user/repo -b main          # Clone specific branch
 
 # Provider selection
 cloudrouter start -p e2b .                 # Use E2B provider (default)
 cloudrouter start -p modal .               # Use Modal provider
+
+# Custom timeout
+cloudrouter start --timeout 1800 .         # 30-minute timeout (default: 600s = 10 min)
 ```
+
+### Size Presets
+
+| Size | vCPU | RAM | Disk | Notes |
+|------|------|-----|------|-------|
+| small | 2 | 8 GB | 20 GB | Light tasks |
+| medium | 4 | 16 GB | 40 GB | Standard development |
+| large | 8 | 32 GB | 80 GB | **Default** |
+| xlarge | 16 | 64 GB | 160 GB | Heavy workloads |
+
+Individual resource flags (`--cpu`, `--memory`, `--disk`) override `--size` values.
 
 ### GPU Options
 
@@ -133,7 +154,7 @@ cloudrouter start -p modal .               # Use Modal provider
 | H200 | 141GB | Maximum memory capacity | Requires approval |
 | B200 | 192GB | Latest gen, frontier models | Requires approval |
 
-GPUs requiring approval: contact founders@manaflow.com.
+GPUs requiring approval: contact founders@manaflow.ai.
 
 Multi-GPU: append `:N` to the GPU type, e.g. `--gpu H100:2` for 2x H100.
 
@@ -142,35 +163,48 @@ Multi-GPU: append `:N` to the GPU type, e.g. `--gpu H100:2` for 2x H100.
 ```
 -n, --name <name>       Name for the sandbox
 -o, --open              Open VS Code after creation
-    --docker            Enable Docker support (E2B only)
+    --size <preset>     Machine size: small, medium, large (default), xlarge
     --gpu <type>        GPU type (T4, L4, A10G, L40S, A100, H100, H200, B200)
-    --cpu <cores>       CPU cores (e.g., 4, 8)
-    --memory <MiB>      Memory in MiB (e.g., 8192, 65536)
+    --cpu <cores>       CPU cores (overrides --size)
+    --memory <MiB>      Memory in MiB (overrides --size)
+    --disk <GB>         Disk size in GB (overrides --size)
     --image <image>     Container image (e.g., ubuntu:22.04)
     --git <repo>        Git repository URL or user/repo shorthand
 -b, --branch <branch>   Git branch to clone
 -p, --provider <name>   Sandbox provider: e2b (default), modal
--T, --template <id>     Template ID (overrides --docker) — DO NOT use template names from `cloudrouter templates`; use --docker or --gpu flags instead
+-T, --template <id>     Template ID — DO NOT use template names from `cloudrouter templates`; use --gpu flags instead
+    --timeout <secs>    Sandbox timeout in seconds (default: 600 = 10 minutes)
 ```
 
-> **Warning:** Do NOT pass template names (e.g. `cmux-devbox-base`) to the `-T` flag. These are display names, not valid E2B template IDs. Use `--docker` for Docker support and `--gpu <type>` for GPU support instead.
+> **Warning:** Do NOT pass template names (e.g. `cmux-devbox-base`) to the `-T` flag. These are display names, not valid template IDs.
+
+> **Aliases:** `cloudrouter start`, `cloudrouter create`, `cloudrouter new` all do the same thing.
 
 ### Managing Sandboxes
 
 ```bash
-cloudrouter ls                  # List all sandboxes
-cloudrouter status <id>         # Show sandbox details and URLs
-cloudrouter stop <id>           # Stop sandbox (can restart later)
-cloudrouter extend <id>         # Extend sandbox timeout (default: +1 hour)
-cloudrouter extend <id> --seconds 7200  # Extend by 2 hours
-cloudrouter delete <id>         # Delete sandbox permanently
-cloudrouter templates           # List available templates
+cloudrouter ls                           # List all sandboxes
+cloudrouter ls -p modal                  # List only GPU sandboxes
+cloudrouter ls -p e2b                    # List only Docker sandboxes
+cloudrouter status <id>                  # Show sandbox details and URLs
+cloudrouter stop <id>                    # Pause sandbox (preserves state, can resume)
+cloudrouter pause <id>                   # Same as stop — alias
+cloudrouter resume <id>                  # Resume a paused sandbox
+cloudrouter extend <id>                  # Extend sandbox timeout (default: +1 hour)
+cloudrouter extend <id> --seconds 7200   # Extend by 2 hours
+cloudrouter delete <id>                  # Delete sandbox permanently
+cloudrouter templates                    # List available templates
 ```
+
+> **Important:** `stop` and `pause` are the same command — they preserve sandbox state. Use `resume` to bring a paused sandbox back. Use `delete` (aliases: `rm`, `kill`) to permanently destroy a sandbox.
+
+> **Do NOT use `--timeout`** with `extend` — the flag is `--seconds`.
 
 ### Access Sandbox
 
 ```bash
 cloudrouter code <id>           # Open VS Code in browser
+cloudrouter jupyter <id>        # Open Jupyter Lab in browser
 cloudrouter vnc <id>            # Open VNC desktop in browser
 cloudrouter pty <id>            # Interactive terminal session
 ```
@@ -178,11 +212,13 @@ cloudrouter pty <id>            # Interactive terminal session
 ### Work with Sandbox
 
 ```bash
-cloudrouter pty <id>                  # Interactive terminal session (use this to run commands)
-cloudrouter exec <id> <command>       # Execute a one-off command
+cloudrouter pty <id>                       # Interactive terminal session (use for ongoing work)
+cloudrouter exec <id> <command>            # Execute a one-off command
+cloudrouter exec <id> "ls -la" --timeout 60  # Execute with custom timeout (default: 30s)
+cloudrouter pty-list <id>                  # List active PTY sessions
 ```
 
-> **Important:** Prefer `cloudrouter pty` for interactive work. Use `cloudrouter exec` only for quick one-off commands.
+> **Important:** Prefer `cloudrouter pty` for interactive work. Use `cloudrouter exec` only for quick one-off commands. The exec `--timeout` flag is in seconds (default 30).
 
 ### File Transfer
 
@@ -203,6 +239,7 @@ cloudrouter upload <id> . -r /home/user/app        # Upload to specific remote p
 cloudrouter upload <id> . --watch                  # Watch and re-upload on changes
 cloudrouter upload <id> . --delete                 # Delete remote files not present locally
 cloudrouter upload <id> . -e "*.log"               # Exclude patterns
+cloudrouter upload <id> . --dry-run                # Preview without making changes
 
 # Download (sandbox -> local)
 cloudrouter download <id>                          # Download workspace to current dir
@@ -214,69 +251,73 @@ cloudrouter download <id> ./output -r /home/user/app  # Download specific remote
 >
 > **Common mistake:** `cloudrouter download <id> /remote/path /local/path` — this passes 3 positional args and will fail. Use `cloudrouter download <id> /local/path -r /remote/path` instead.
 
-### Browser Automation (agent-browser via `ab`)
+### Browser Automation (`cloudrouter browser`)
 
-Browser automation uses [agent-browser](https://github.com/vercel-labs/agent-browser) (`ab`), which is pre-installed in every sandbox. All browser commands are run via `cloudrouter exec`:
+Control Chrome browser in the sandbox via agent-browser. The `cloudrouter browser` command wraps [agent-browser](https://github.com/vercel-labs/agent-browser) and runs commands inside the sandbox via SSH.
 
-```bash
-cloudrouter exec <id> "ab <command>"
-```
-
-> **Startup delay:** The browser may not be ready immediately after sandbox creation. If an `ab` command fails right after `cloudrouter start`, wait a few seconds and retry.
+> **Startup delay:** The browser may not be ready immediately after sandbox creation. If a `browser` command fails right after `cloudrouter start`, wait a few seconds and retry.
 
 #### Navigation
 
 ```bash
-cloudrouter exec <id> "ab open https://example.com"   # Navigate to URL
-cloudrouter exec <id> "ab back"                        # Navigate back
-cloudrouter exec <id> "ab forward"                     # Navigate forward
-cloudrouter exec <id> "ab reload"                      # Reload page
-cloudrouter exec <id> "ab get url"                     # Get current URL
-cloudrouter exec <id> "ab get title"                   # Get page title
+cloudrouter browser open <id> <url>        # Navigate to URL
+cloudrouter browser back <id>              # Navigate back
+cloudrouter browser forward <id>           # Navigate forward
+cloudrouter browser reload <id>            # Reload page
+cloudrouter browser url <id>               # Get current URL
+cloudrouter browser title <id>             # Get page title
 ```
 
 #### Inspect Page
 
 ```bash
-cloudrouter exec <id> "ab snapshot -i"                 # Interactive elements only (RECOMMENDED)
-cloudrouter exec <id> "ab snapshot"                    # Full accessibility tree
-cloudrouter exec <id> "ab snapshot -s '#main'"         # Scope to a CSS selector
-cloudrouter exec <id> "ab screenshot"                  # Take screenshot
-cloudrouter exec <id> "ab screenshot /tmp/out.png"     # Save screenshot to file
+cloudrouter browser snapshot -i <id>               # Interactive elements only (RECOMMENDED)
+cloudrouter browser snapshot <id>                  # Full accessibility tree
+cloudrouter browser snapshot -c <id>               # Compact output
+cloudrouter browser screenshot <id>                # Take screenshot (base64 to stdout)
+cloudrouter browser screenshot <id> out.png        # Save screenshot to file
+cloudrouter browser screenshot <id> --full         # Full page screenshot
 ```
 
 #### Interact with Elements
 
 ```bash
-cloudrouter exec <id> "ab click @e1"                   # Click element
-cloudrouter exec <id> "ab fill @e2 'user@example.com'" # Clear input and fill value
-cloudrouter exec <id> "ab type @e3 'some text'"        # Type without clearing
-cloudrouter exec <id> "ab press Enter"                 # Press key (Enter, Tab, Escape, etc.)
-cloudrouter exec <id> "ab hover @e4"                   # Hover over element
-cloudrouter exec <id> "ab scroll down 500"             # Scroll (up/down/left/right, px)
-cloudrouter exec <id> "ab select @e5 'option-value'"   # Select dropdown option
-cloudrouter exec <id> "ab check @e6"                   # Check checkbox
-cloudrouter exec <id> "ab upload @e7 /tmp/file.pdf"    # Upload file
+cloudrouter browser click <id> @e1                 # Click element by ref
+cloudrouter browser click <id> "#submit"           # Click by CSS selector
+cloudrouter browser dblclick <id> @e1              # Double-click element
+cloudrouter browser fill <id> @e2 "user@email.com" # Clear input and fill value
+cloudrouter browser type <id> @e3 "some text"      # Type without clearing (appends)
+cloudrouter browser press <id> Enter               # Press key (Enter, Tab, Escape, etc.)
+cloudrouter browser hover <id> @e4                 # Hover over element
+cloudrouter browser focus <id> @e5                 # Focus element
+cloudrouter browser scroll <id> down 500           # Scroll (up/down/left/right, optional px)
+cloudrouter browser scrollintoview <id> @e6        # Scroll element into view
+cloudrouter browser select <id> @e7 "option-value" # Select dropdown option
+cloudrouter browser check <id> @e8                 # Check checkbox
+cloudrouter browser uncheck <id> @e9               # Uncheck checkbox
+cloudrouter browser upload <id> @e10 /tmp/file.pdf # Upload file to file input
+cloudrouter browser drag <id> @e1 @e2              # Drag and drop
 ```
 
 #### Wait Commands
 
 ```bash
-cloudrouter exec <id> "ab wait @e1"                    # Wait for element to appear
-cloudrouter exec <id> "ab wait 2000"                   # Wait milliseconds
-cloudrouter exec <id> "ab wait -t 'Success'"           # Wait for text to appear
-cloudrouter exec <id> "ab wait -u '**/dashboard'"      # Wait for URL pattern
-cloudrouter exec <id> "ab wait -l networkidle"         # Wait for network idle
+cloudrouter browser wait <id> @e1                  # Wait for element to appear
+cloudrouter browser wait <id> 2000                 # Wait milliseconds
 ```
 
 #### Get Information
 
 ```bash
-cloudrouter exec <id> "ab get text @e1"                # Get element text content
-cloudrouter exec <id> "ab get value @e2"               # Get input value
-cloudrouter exec <id> "ab get attr @e3 href"           # Get specific attribute
-cloudrouter exec <id> "ab get count '.item'"           # Count matching elements
-cloudrouter exec <id> "ab is visible @e1"              # Check if element is visible
+cloudrouter browser get-text <id> @e1              # Get element text content
+cloudrouter browser get-value <id> @e2             # Get input value
+cloudrouter browser get-attr <id> @e3 href         # Get specific attribute
+cloudrouter browser get-html <id> @e4              # Get innerHTML
+cloudrouter browser get-count <id> ".item"         # Count matching elements
+cloudrouter browser get-box <id> @e5               # Get bounding box
+cloudrouter browser is-visible <id> @e1            # Check if element is visible
+cloudrouter browser is-enabled <id> @e1            # Check if element is enabled
+cloudrouter browser is-checked <id> @e1            # Check if checkbox is checked
 ```
 
 #### Semantic Locators (alternative to refs)
@@ -284,21 +325,87 @@ cloudrouter exec <id> "ab is visible @e1"              # Check if element is vis
 When element refs are unreliable (dynamic pages), use semantic locators:
 
 ```bash
-cloudrouter exec <id> "ab find text 'Sign In' click"              # Find by visible text and click
-cloudrouter exec <id> "ab find label 'Email' fill 'user@test.com'"  # Find by label and fill
-cloudrouter exec <id> "ab find role button click --name 'Submit'"  # Find by ARIA role
-cloudrouter exec <id> "ab find placeholder 'Search' type 'query'" # Find by placeholder
+cloudrouter browser find <id> text "Sign In" click              # Find by visible text and click
+cloudrouter browser find <id> label "Email" fill "user@test.com" # Find by label and fill
+cloudrouter browser find <id> role button click                  # Find by ARIA role
+cloudrouter browser find <id> placeholder "Search" type "query"  # Find by placeholder
+cloudrouter browser find <id> testid "submit-btn" click          # Find by data-testid
+```
+
+#### JavaScript & Console
+
+```bash
+cloudrouter browser eval <id> "document.title"                   # Evaluate JavaScript
+cloudrouter browser console <id>                                 # View console messages
+cloudrouter browser errors <id>                                  # View JavaScript errors
+```
+
+#### Tabs & Frames
+
+```bash
+cloudrouter browser tab-list <id>                  # List open tabs
+cloudrouter browser tab-new <id> "https://..."     # Open new tab
+cloudrouter browser tab-switch <id> 2              # Switch to tab by index
+cloudrouter browser tab-close <id>                 # Close current tab
+cloudrouter browser frame <id> "#iframe-selector"  # Switch to iframe
+cloudrouter browser frame <id> main                # Switch back to main frame
+```
+
+#### Cookies & Storage
+
+```bash
+cloudrouter browser cookies <id>                   # List cookies
+cloudrouter browser cookies-set <id> name value    # Set a cookie
+cloudrouter browser cookies-clear <id>             # Clear all cookies
+cloudrouter browser storage-local <id>             # Get all localStorage
+cloudrouter browser storage-local <id> key         # Get specific key
+cloudrouter browser storage-local-set <id> k v     # Set localStorage value
+cloudrouter browser storage-local-clear <id>       # Clear localStorage
+```
+
+#### State Management
+
+```bash
+cloudrouter browser state-save <id> /tmp/auth.json   # Save cookies, storage, auth state
+cloudrouter browser state-load <id> /tmp/auth.json   # Restore saved state
+```
+
+#### Browser Settings
+
+```bash
+cloudrouter browser set-viewport <id> 1920 1080    # Set viewport size
+cloudrouter browser set-device <id> "iPhone 14"    # Emulate device
+cloudrouter browser set-geo <id> 37.7749 -122.4194 # Set geolocation
+cloudrouter browser set-offline <id> on            # Toggle offline mode
+cloudrouter browser set-media <id> dark            # Emulate color scheme (dark/light)
+```
+
+#### Network Interception
+
+```bash
+cloudrouter browser network-route <id> "**/api/*"            # Intercept requests
+cloudrouter browser network-route <id> "**/ads/*" --abort    # Block requests
+cloudrouter browser network-unroute <id>                     # Remove all routes
+cloudrouter browser network-requests <id>                    # List tracked requests
+```
+
+#### Dialogs
+
+```bash
+cloudrouter browser dialog-accept <id>             # Accept alert/confirm/prompt
+cloudrouter browser dialog-accept <id> "answer"    # Accept prompt with text
+cloudrouter browser dialog-dismiss <id>            # Dismiss dialog
 ```
 
 #### Element Selectors
 
 Two ways to select elements:
-- **Element refs** from snapshot: `@e1`, `@e2`, `@e3`... (preferred — from `ab snapshot -i`)
+- **Element refs** from snapshot: `@e1`, `@e2`, `@e3`... (preferred — from `cloudrouter browser snapshot -i`)
 - **CSS selectors**: `#id`, `.class`, `button[type="submit"]`
 
 #### Tips for Effective Browser Automation
 
-1. **Always snapshot before interacting.** Never use `@e1` without a preceding `ab snapshot -i`. Refs don't exist until you snapshot.
+1. **Always snapshot before interacting.** Never use `@e1` without a preceding `cloudrouter browser snapshot -i <id>`. Refs don't exist until you snapshot.
 
 2. **Always re-snapshot after DOM changes.** After any click that navigates, opens a dropdown, submits a form, or triggers dynamic content — snapshot again. Old refs may point to different elements.
 
@@ -306,13 +413,15 @@ Two ways to select elements:
 
 4. **Use `fill` not `type` for form fields.** `fill` clears existing content first, which is almost always what you want. `type` appends to existing content.
 
-5. **Wait after navigation.** After clicking a link or submitting a form, use `ab wait -l networkidle` before snapshotting to ensure the page has fully loaded.
+5. **Wait after navigation.** After clicking a link or submitting a form, use `cloudrouter browser wait <id> 2000` or wait for a specific element before snapshotting to ensure the page has fully loaded.
 
-6. **Scope snapshots on complex pages.** Use `ab snapshot -s '#main'` to focus on a specific section rather than getting the entire page tree.
+6. **Verify navigation with `url` / `title`.** After clicking a link or submitting a form, confirm you landed on the expected page.
 
-7. **Verify navigation with `get url` / `get title`.** After clicking a link or submitting a form, confirm you landed on the expected page.
+7. **Save auth state for reuse.** After logging in, use `cloudrouter browser state-save <id> /tmp/auth.json` to persist cookies/storage. Reload with `state-load` in future sessions.
 
-8. **Fall back to semantic locators.** If a page is highly dynamic and refs keep going stale, use `ab find text "Submit" click` instead of refs.
+8. **Fall back to semantic locators.** If a page is highly dynamic and refs keep going stale, use `cloudrouter browser find <id> text "Submit" click` instead of refs.
+
+> **Alternative:** You can also run agent-browser directly via exec: `cloudrouter exec <id> "ab snapshot -i"`. The `cloudrouter browser` commands are wrappers around `ab` (agent-browser) which is pre-installed in every sandbox.
 
 ## Sandbox IDs
 
@@ -337,12 +446,11 @@ cloudrouter pty cr_abc123                    # Open terminal
 cloudrouter download cr_abc123 ./checkpoints # Download trained model
 ```
 
-### Docker workflow
+### Jupyter workflow
 
 ```bash
-cloudrouter start --docker ./my-app          # Sandbox with Docker
-cloudrouter pty cr_abc123                    # Open terminal
-# Inside: docker compose up -d
+cloudrouter start ./notebooks         # Create sandbox
+cloudrouter jupyter cr_abc123         # Open Jupyter Lab in browser
 ```
 
 ### File transfer workflow
@@ -356,28 +464,36 @@ cloudrouter download cr_abc123 ./output       # Pull files from sandbox to local
 ### Browser automation: Login to a website
 
 ```bash
-cloudrouter exec cr_abc123 "ab open https://example.com/login"
-cloudrouter exec cr_abc123 "ab snapshot -i"
+cloudrouter browser open cr_abc123 "https://example.com/login"
+cloudrouter browser snapshot -i cr_abc123
 # Output: @e1 [input type="email"] placeholder="Email"
 #         @e2 [input type="password"] placeholder="Password"
 #         @e3 [button] "Sign In"
 
-cloudrouter exec cr_abc123 "ab fill @e1 'user@example.com'"
-cloudrouter exec cr_abc123 "ab fill @e2 'password123'"
-cloudrouter exec cr_abc123 "ab click @e3"
-cloudrouter exec cr_abc123 "ab wait -l networkidle"
-cloudrouter exec cr_abc123 "ab snapshot -i"              # Re-snapshot after navigation!
-cloudrouter exec cr_abc123 "ab screenshot /tmp/result.png"
+cloudrouter browser fill cr_abc123 @e1 "user@example.com"
+cloudrouter browser fill cr_abc123 @e2 "password123"
+cloudrouter browser click cr_abc123 @e3
+cloudrouter browser wait cr_abc123 2000               # Wait for navigation
+cloudrouter browser snapshot -i cr_abc123              # Re-snapshot after navigation!
+cloudrouter browser screenshot cr_abc123 /tmp/result.png
 ```
 
 ### Browser automation: Scrape data
 
 ```bash
-cloudrouter exec cr_abc123 "ab open https://example.com/data"
-cloudrouter exec cr_abc123 "ab wait -l networkidle"
-cloudrouter exec cr_abc123 "ab snapshot -i"       # Get interactive elements
-cloudrouter exec cr_abc123 "ab get text @e5"      # Extract specific element text
-cloudrouter exec cr_abc123 "ab screenshot"        # Visual capture
+cloudrouter browser open cr_abc123 "https://example.com/data"
+cloudrouter browser wait cr_abc123 2000
+cloudrouter browser snapshot -i cr_abc123     # Get interactive elements
+cloudrouter browser get-text cr_abc123 @e5    # Extract specific element text
+cloudrouter browser screenshot cr_abc123      # Visual capture
+```
+
+### Pause and resume workflow
+
+```bash
+cloudrouter stop cr_abc123            # Pause (preserves state)
+# ... later ...
+cloudrouter resume cr_abc123          # Resume where you left off
 ```
 
 ### Sandbox Lifecycle & Cleanup
@@ -388,11 +504,11 @@ cloudrouter exec cr_abc123 "ab screenshot"        # Visual capture
 
 1. **Only touch sandboxes you created in this session.** Never stop or delete sandboxes you didn't create or don't recognize. If you see unknown sandboxes in `cloudrouter ls`, leave them alone — they may belong to the user or another workflow.
 
-2. **Extend before cleanup.** Before stopping or deleting a sandbox you created, consider whether the user might want to inspect it. If you built something the user should see (a running app, a trained model, browser automation results, etc.), **extend the sandbox** with `cloudrouter extend <id>` so the user has time to check it out. Share the relevant URL (VS Code, VNC, etc.) so they can access it.
-   - Use `--seconds <N>` to set a custom duration (default is 3600 = 1 hour). **Do NOT use `--timeout`** — that flag does not exist.
+2. **Extend before cleanup.** Before stopping or deleting a sandbox you created, consider whether the user might want to inspect it. If you built something the user should see (a running app, a trained model, browser automation results, etc.), **extend the sandbox** with `cloudrouter extend <id>` so the user has time to check it out. Share the relevant URL (VS Code, VNC, Jupyter, etc.) so they can access it.
+   - Use `--seconds <N>` to set a custom duration (default is 3600 = 1 hour). **Do NOT use `--timeout`** — that flag does not exist on `extend`.
    - Example: `cloudrouter extend cr_abc123 --seconds 1800` extends by 30 minutes.
 
-3. **Stop, don't delete, by default.** Prefer `cloudrouter stop <id>` over `cloudrouter delete <id>` unless the sandbox is clearly disposable (e.g., a quick test that produced no artifacts). Stopped sandboxes can be restarted; deleted ones are gone forever.
+3. **Stop (pause), don't delete, by default.** Prefer `cloudrouter stop <id>` over `cloudrouter delete <id>` unless the sandbox is clearly disposable (e.g., a quick test that produced no artifacts). Stopped sandboxes can be resumed with `cloudrouter resume <id>`; deleted ones are gone forever.
 
 4. **Clean up when you're done.** When your task is complete and the user no longer needs the sandbox, stop it. Don't leave sandboxes running indefinitely — they count toward the concurrency limit.
 
@@ -403,12 +519,12 @@ cloudrouter exec cr_abc123 "ab screenshot"        # Visual capture
 **Cleanup workflow:**
 
 ```bash
-cloudrouter ls                  # Check running sandboxes and count
-cloudrouter extend cr_abc123                # Extend by 1 hour (default)
-cloudrouter extend cr_abc123 --seconds 3600 # Extend by custom duration
+cloudrouter ls                                   # Check running sandboxes and count
+cloudrouter extend cr_abc123                     # Extend by 1 hour (default)
+cloudrouter extend cr_abc123 --seconds 3600      # Extend by custom duration
 # ... share URLs, let user verify ...
-cloudrouter stop cr_abc123      # Stop when done (can restart later)
-cloudrouter delete cr_abc123    # Delete only if clearly disposable
+cloudrouter stop cr_abc123                       # Pause when done (can resume later)
+cloudrouter delete cr_abc123                     # Delete only if clearly disposable
 ```
 
 ## Surfacing URLs and Screenshots
@@ -418,11 +534,11 @@ Proactively share authenticated sandbox URLs and screenshots with the user when 
 **When to surface URLs:**
 - After creating a sandbox or setting up an environment, share the VS Code URL (`cloudrouter code <id>`) so the user can inspect the workspace
 - After deploying or starting a service, share the VNC URL (`cloudrouter vnc <id>`) so the user can see it running
-- When Jupyter is running, share the Jupyter URL so the user can verify notebooks
+- When Jupyter is running, share the Jupyter URL (`cloudrouter jupyter <id>`) so the user can verify notebooks
 - Whenever the user might want to verify, inspect, or interact with the sandbox themselves
 
 **When to take and share screenshots:**
-- After completing a visual task (e.g., UI changes, web app deployment) — take a screenshot with `cloudrouter exec <id> "ab screenshot /tmp/out.png"` and show it
+- After completing a visual task (e.g., UI changes, web app deployment) — take a screenshot with `cloudrouter browser screenshot <id> /tmp/out.png` and show it
 - When something looks wrong or unexpected — screenshot it for the user to confirm
 - After browser automation steps that produce visible results (form submissions, page navigations, login flows)
 - When the user asks you to check or verify something visually
@@ -440,7 +556,7 @@ When a dev server runs in the sandbox (e.g., Vite on port 5173, Next.js on port 
 - **NEVER** construct or guess E2B port URLs from sandbox metadata
 - **ALWAYS** tell the user to view dev servers through VNC: `cloudrouter vnc <id>`
 - VNC is protected by token authentication (`?tkn=`) and is the only safe way to view dev server output
-- **DO** share authenticated URLs: VS Code (`cloudrouter code <id>`), VNC (`cloudrouter vnc <id>`), and Jupyter URLs — these have proper token auth and are safe to surface
+- **DO** share authenticated URLs: VS Code (`cloudrouter code <id>`), VNC (`cloudrouter vnc <id>`), Jupyter (`cloudrouter jupyter <id>`) — these have proper token auth and are safe to surface
 
 **When a dev server is started:**
 ```
@@ -459,5 +575,4 @@ Frontend: https://5173-xxx.e2b.app   <- WRONG: publicly accessible, no auth
 ```
 -t, --team <team>   Team slug (overrides default)
 -v, --verbose       Verbose output
-    --json          Machine-readable JSON output
 ```
