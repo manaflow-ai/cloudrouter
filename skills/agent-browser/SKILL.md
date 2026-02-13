@@ -59,7 +59,7 @@ cloudrouter browser focus <id> @e3           # Focus element
 cloudrouter browser scroll <id> down         # Scroll down (default pixels)
 cloudrouter browser scroll <id> down 500     # Scroll down 500px
 cloudrouter browser scroll <id> up           # Scroll up
-cloudrouter browser scrollintoview <id> @e6  # Scroll element into view
+cloudrouter browser scrollintoview <id> "#element"  # Scroll into view (CSS selector only, NOT @e refs)
 cloudrouter browser select <id> @e7 "value"  # Select dropdown option
 cloudrouter browser check <id> @e8           # Check checkbox
 cloudrouter browser uncheck <id> @e9         # Uncheck checkbox
@@ -263,3 +263,8 @@ cloudrouter browser open <id> "https://app.example.com/dashboard"
 | `find ... role button click` clicks wrong button | Use `find ... text "Button Name" click` instead |
 | `find ... --name "X"` fails | There is no `--name` flag — use `text` locator |
 | `npm install` EACCES error | Run `cloudrouter ssh <id> "sudo chown -R 1000:1000 /home/user/.npm"` first |
+| `scrollintoview @e1` fails with "Unsupported token" | `scrollintoview` and `highlight` only accept CSS selectors (`"#id"`, `".class"`), NOT `@e` refs |
+| `pkill -f` kills SSH session (exit 143/255) | `pkill -f` pattern may match the SSH session. Just run another command to recover |
+| `pdf` saves to remote, not local | File saves inside sandbox (e.g. `/tmp/page.pdf`). Use `cloudrouter download` to retrieve |
+| `storage-local <id> key` shows "Done" not value | Use `eval <id> "localStorage.getItem('key')"` to get a specific localStorage value |
+| Stale ref error: "Action timed out" | Always re-snapshot after clicks/form submits that change the DOM |

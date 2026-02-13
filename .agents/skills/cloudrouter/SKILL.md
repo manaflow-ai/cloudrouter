@@ -222,6 +222,16 @@ cloudrouter pty-list <id>                  # List active PTY sessions
 >
 > **CRITICAL: Always quote the command string.** `cloudrouter ssh <id> ls -la` will FAIL because `-la` is parsed as a cloudrouter flag. Always wrap in quotes: `cloudrouter ssh <id> "ls -la"`.
 
+#### IMPORTANT: Fix npm Permissions Before Any npm Command
+
+**ALWAYS run this before `npm install` or any npm command in a new sandbox:**
+
+```bash
+cloudrouter ssh <id> "sudo chown -R 1000:1000 /home/user/.npm"
+```
+
+Without this, `npm install` will fail with EACCES/ENOENT errors on `.npm/_cacache`. This must be done **once per sandbox, before the first npm operation**. Do not skip this step.
+
 ### File Transfer
 
 Upload and download files or directories between local machine and sandbox.
@@ -293,7 +303,7 @@ cloudrouter browser press <id> Enter               # Press key (Enter, Tab, Esca
 cloudrouter browser hover <id> @e4                 # Hover over element
 cloudrouter browser focus <id> @e5                 # Focus element
 cloudrouter browser scroll <id> down 500           # Scroll (up/down/left/right, optional px)
-cloudrouter browser scrollintoview <id> @e6        # Scroll element into view
+cloudrouter browser scrollintoview <id> "#element"  # Scroll element into view (CSS selector only, NOT @e refs)
 cloudrouter browser select <id> @e7 "option-value" # Select dropdown option
 cloudrouter browser check <id> @e8                 # Check checkbox
 cloudrouter browser uncheck <id> @e9               # Uncheck checkbox
@@ -442,7 +452,7 @@ Sandbox IDs look like `cr_abc12345`. Use the full ID when running commands. Get 
 
 ```bash
 cloudrouter start ./my-project                                      # Creates sandbox, uploads files
-cloudrouter ssh cr_abc123 "sudo chown -R 1000:1000 /home/user/.npm" # Fix npm permissions (run once)
+cloudrouter ssh cr_abc123 "sudo chown -R 1000:1000 /home/user/.npm" # ⚠ MUST run before any npm command
 cloudrouter ssh cr_abc123 "cd /home/user/workspace && npm install"   # Install dependencies
 cloudrouter code cr_abc123                                          # Open VS Code
 cloudrouter pty cr_abc123                                           # Open terminal (e.g. npm run dev)
@@ -585,7 +595,7 @@ Frontend: https://5173-xxx.e2b.app   <- WRONG: publicly accessible, no auth
 
 | Issue | Fix |
 |-------|-----|
-| `npm install` fails with EACCES on `.npm/_cacache` | Run `cloudrouter ssh <id> "sudo chown -R 1000:1000 /home/user/.npm"` first |
+| `npm install` fails with EACCES/ENOENT errors | **ALWAYS** run `cloudrouter ssh <id> "sudo chown -R 1000:1000 /home/user/.npm"` BEFORE any npm command in a new sandbox |
 | `cloudrouter ssh <id> ls -la` fails with "unknown flag" | Always quote the command: `cloudrouter ssh <id> "ls -la"` |
 | `snapshot <id> -i` returns empty/wrong results | Flags go BEFORE the ID: `snapshot -i <id>` |
 | Browser commands fail right after `start` | Wait a few seconds — Chrome needs time to boot |
@@ -594,6 +604,12 @@ Frontend: https://5173-xxx.e2b.app   <- WRONG: publicly accessible, no auth
 | Refs from `snapshot` don't match `snapshot -i` | Don't mix modes — stick to `snapshot -i` for interactions |
 | Dev server running but can't access it | Use `cloudrouter browser open <id> "http://localhost:PORT"` — don't expose E2B port URLs |
 | Long-running `ssh` command hangs | Use `cloudrouter pty` for interactive/long commands, `ssh` is for quick one-offs |
+| `scrollintoview @e1` fails with "Unsupported token" | `scrollintoview` and `highlight` only accept CSS selectors (e.g. `"#id"`, `".class"`), NOT `@e` refs |
+| `pkill -f` kills SSH session (exit 143/255) | `pkill -f` pattern may match the SSH session. Just run another `ssh` command to recover |
+| `pdf` command saves to remote path | File saves inside the sandbox (e.g. `/tmp/page.pdf`). Use `cloudrouter download` to get it locally |
+| `storage-local <id> key` shows "Done" not the value | Use `eval <id> "localStorage.getItem('key')"` to reliably get a specific localStorage value |
+| Stale ref error after DOM change | Always re-snapshot after clicks/form submits. Error says "timed out" — means ref is stale |
+| `create-next-app` hangs via `ssh` | Interactive prompts don't work in `ssh`. Use `pty` for interactive installers, or pipe input |
 
 ## Global Flags
 
