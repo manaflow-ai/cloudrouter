@@ -89,10 +89,11 @@ When refs are unreliable on dynamic pages:
 ```bash
 cloudrouter browser find <id> text "Sign In" click                 # By visible text
 cloudrouter browser find <id> label "Email" fill "user@test.com"   # By label
-cloudrouter browser find <id> role button click                    # By ARIA role
 cloudrouter browser find <id> placeholder "Search" type "query"    # By placeholder
 cloudrouter browser find <id> testid "submit-btn" click            # By data-testid
 ```
+
+> **Note:** `find <id> role button click` finds the FIRST button on the page — it cannot filter by name. Use `find <id> text "Button Name" click` to target a specific button. There is no `--name` flag.
 
 ### JavaScript & Debugging
 
@@ -259,3 +260,6 @@ cloudrouter browser open <id> "https://app.example.com/dashboard"
 | Browser not ready | Wait a few seconds after sandbox creation, retry |
 | Refs differ between snapshots | Don't mix full and `-i` snapshots |
 | Form field has old text | Use `fill` (clears first) instead of `type` |
+| `find ... role button click` clicks wrong button | Use `find ... text "Button Name" click` instead |
+| `find ... --name "X"` fails | There is no `--name` flag — use `text` locator |
+| `npm install` EACCES error | Run `cloudrouter ssh <id> "sudo chown -R 1000:1000 /home/user/.npm"` first |

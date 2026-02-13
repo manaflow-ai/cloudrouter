@@ -329,10 +329,11 @@ When element refs are unreliable (dynamic pages), use semantic locators:
 ```bash
 cloudrouter browser find <id> text "Sign In" click              # Find by visible text and click
 cloudrouter browser find <id> label "Email" fill "user@test.com" # Find by label and fill
-cloudrouter browser find <id> role button click                  # Find by ARIA role
 cloudrouter browser find <id> placeholder "Search" type "query"  # Find by placeholder
 cloudrouter browser find <id> testid "submit-btn" click          # Find by data-testid
 ```
+
+> **Note:** `find <id> role button click` finds the FIRST button on the page — it cannot filter by button name. Use `find <id> text "Button Name" click` to target a specific button by its visible text. There is no `--name` flag.
 
 #### JavaScript & Console
 
@@ -440,9 +441,11 @@ Sandbox IDs look like `cr_abc12345`. Use the full ID when running commands. Get 
 ### Create and develop in a sandbox (preferred: local-to-cloud)
 
 ```bash
-cloudrouter start ./my-project        # Creates sandbox, uploads files
-cloudrouter code cr_abc123            # Open VS Code
-cloudrouter pty cr_abc123             # Open terminal to run commands (e.g. npm install && npm run dev)
+cloudrouter start ./my-project                                      # Creates sandbox, uploads files
+cloudrouter ssh cr_abc123 "sudo chown -R 1000:1000 /home/user/.npm" # Fix npm permissions (run once)
+cloudrouter ssh cr_abc123 "cd /home/user/workspace && npm install"   # Install dependencies
+cloudrouter code cr_abc123                                          # Open VS Code
+cloudrouter pty cr_abc123                                           # Open terminal (e.g. npm run dev)
 ```
 
 ### GPU workflow: ML training
@@ -577,6 +580,20 @@ Dev server running on port 5173
 ```
 Frontend: https://5173-xxx.e2b.app   <- WRONG: publicly accessible, no auth
 ```
+
+## Common Issues & Fixes
+
+| Issue | Fix |
+|-------|-----|
+| `npm install` fails with EACCES on `.npm/_cacache` | Run `cloudrouter ssh <id> "sudo chown -R 1000:1000 /home/user/.npm"` first |
+| `cloudrouter ssh <id> ls -la` fails with "unknown flag" | Always quote the command: `cloudrouter ssh <id> "ls -la"` |
+| `snapshot <id> -i` returns empty/wrong results | Flags go BEFORE the ID: `snapshot -i <id>` |
+| Browser commands fail right after `start` | Wait a few seconds — Chrome needs time to boot |
+| `find ... role button click` clicks wrong button | Use `find ... text "Button Name" click` to target by visible text |
+| `extend --timeout 300` fails | Use `--seconds`: `extend <id> --seconds 300` |
+| Refs from `snapshot` don't match `snapshot -i` | Don't mix modes — stick to `snapshot -i` for interactions |
+| Dev server running but can't access it | Use `cloudrouter browser open <id> "http://localhost:PORT"` — don't expose E2B port URLs |
+| Long-running `ssh` command hangs | Use `cloudrouter pty` for interactive/long commands, `ssh` is for quick one-offs |
 
 ## Global Flags
 
