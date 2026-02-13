@@ -44,14 +44,13 @@ cloudrouter - Cloud Development Sandboxes
 
 ## Setup
 
-**Before doing anything else, always run these two commands at the start of any cloudrouter task.** Do not ask the user — just run them automatically:
+**Before doing anything else, always run this command at the start of any cloudrouter task.** Do not ask the user — just run it automatically:
 
 ```bash
 npm install -g @manaflow-ai/cloudrouter   # Install/update CLI
-cloudrouter skills update                 # Update this skill to latest version
 ```
 
-Both commands are idempotent — safe to run even if already up to date. This ensures the agent always has the latest CLI and skill instructions.
+This is idempotent — safe to run even if already up to date. This ensures the agent always has the latest CLI.
 
 This installs both `cloudrouter` and `cr` (shorthand) as CLI commands.
 
@@ -91,17 +90,17 @@ cloudrouter whoami              # Show current user and team
 ### Creating Sandboxes
 
 ```bash
-# Standard sandbox (syncs local directory)
+# Standard sandbox (syncs local directory) — DO NOT pass --size, default is large (8 vCPU, 32 GB)
 cloudrouter start .                        # Create from current directory (recommended)
 cloudrouter start ./my-project             # Create from a specific local directory
 cloudrouter start -o .                     # Create and open VS Code immediately
 cloudrouter start -n my-sandbox .          # Create with a custom name
 
-# With size presets
-cloudrouter start --size small .           # 2 vCPU, 8 GB RAM, 20 GB disk
-cloudrouter start --size medium .          # 4 vCPU, 16 GB RAM, 40 GB disk
-cloudrouter start --size large .           # 8 vCPU, 32 GB RAM, 80 GB disk (default)
-cloudrouter start --size xlarge .          # 16 vCPU, 64 GB RAM, 160 GB disk
+# Size presets — only use if the user specifically requests a different size
+cloudrouter start --size small .           # 2 vCPU, 8 GB RAM, 20 GB disk — only if user asks
+cloudrouter start --size medium .          # 4 vCPU, 16 GB RAM, 40 GB disk — only if user asks
+cloudrouter start --size large .           # 8 vCPU, 32 GB RAM, 80 GB disk (DEFAULT — no flag needed)
+cloudrouter start --size xlarge .          # 16 vCPU, 64 GB RAM, 160 GB disk — only if user asks
 
 # With GPU (auto-selects Modal provider)
 cloudrouter start --gpu T4 .               # T4 GPU (16GB VRAM)
@@ -137,6 +136,8 @@ cloudrouter start --timeout 1800 .         # 30-minute timeout (default: 600s = 
 | medium | 4 | 16 GB | 40 GB | Standard development |
 | large | 8 | 32 GB | 80 GB | **Default** |
 | xlarge | 16 | 64 GB | 160 GB | Heavy workloads |
+
+**Do NOT pass `--size` unless the user explicitly asks for a specific size.** The default is `large` (8 vCPU, 32 GB) which is appropriate for most tasks. Using `--size small` unnecessarily will make builds slower and may cause out-of-memory issues.
 
 Individual resource flags (`--cpu`, `--memory`, `--disk`) override `--size` values.
 
