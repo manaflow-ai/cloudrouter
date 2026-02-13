@@ -213,12 +213,14 @@ cloudrouter pty <id>            # Interactive terminal session
 
 ```bash
 cloudrouter pty <id>                       # Interactive terminal session (use for ongoing work)
-cloudrouter exec <id> <command>            # Execute a one-off command
-cloudrouter exec <id> "ls -la" --timeout 60  # Execute with custom timeout (default: 30s)
+cloudrouter ssh <id> <command>             # Execute a one-off command via SSH
+cloudrouter ssh <id> "ls -la"              # Run a command (always quote the command string)
 cloudrouter pty-list <id>                  # List active PTY sessions
 ```
 
-> **Important:** Prefer `cloudrouter pty` for interactive work. Use `cloudrouter exec` only for quick one-off commands. The exec `--timeout` flag is in seconds (default 30).
+> **Important:** Prefer `cloudrouter pty` for interactive work. Use `cloudrouter ssh` for quick one-off commands.
+>
+> **CRITICAL: Always quote the command string.** `cloudrouter ssh <id> ls -la` will FAIL because `-la` is parsed as a cloudrouter flag. Always wrap in quotes: `cloudrouter ssh <id> "ls -la"`.
 
 ### File Transfer
 
@@ -403,25 +405,31 @@ Two ways to select elements:
 - **Element refs** from snapshot: `@e1`, `@e2`, `@e3`... (preferred — from `cloudrouter browser snapshot -i`)
 - **CSS selectors**: `#id`, `.class`, `button[type="submit"]`
 
+Snapshot output shows refs as `[ref=e1]`, but when using them in commands, prefix with `@`: e.g., `@e1`.
+
 #### Tips for Effective Browser Automation
 
-1. **Always snapshot before interacting.** Never use `@e1` without a preceding `cloudrouter browser snapshot -i <id>`. Refs don't exist until you snapshot.
+1. **Flags go BEFORE the sandbox ID.** This is critical. `cloudrouter browser snapshot -i <id>` works. `cloudrouter browser snapshot <id> -i` silently returns empty/wrong results. Always put flags like `-i`, `-c`, `--full` before the sandbox ID.
 
-2. **Always re-snapshot after DOM changes.** After any click that navigates, opens a dropdown, submits a form, or triggers dynamic content — snapshot again. Old refs may point to different elements.
+2. **Always snapshot before interacting.** Never use `@e1` without a preceding `cloudrouter browser snapshot -i <id>`. Refs don't exist until you snapshot.
 
-3. **Use `snapshot -i` (interactive only).** The `-i` flag returns only actionable elements (buttons, inputs, links), which is far more efficient than the full accessibility tree.
+3. **Always re-snapshot after DOM changes.** After any click that navigates, opens a dropdown, submits a form, or triggers dynamic content — snapshot again. Old refs may point to different elements.
 
-4. **Use `fill` not `type` for form fields.** `fill` clears existing content first, which is almost always what you want. `type` appends to existing content.
+4. **Don't mix snapshot modes.** Full `snapshot` and `snapshot -i` assign DIFFERENT ref numbers to the same elements. If you snapshot with `-i`, always interact using refs from that `-i` snapshot. Don't use refs from a full snapshot when you last ran `-i`, or vice versa.
 
-5. **Wait after navigation.** After clicking a link or submitting a form, use `cloudrouter browser wait <id> 2000` or wait for a specific element before snapshotting to ensure the page has fully loaded.
+5. **Use `snapshot -i` (interactive only).** The `-i` flag returns only actionable elements (buttons, inputs, links), which is far more efficient than the full accessibility tree. Stick to `-i` for all interactions.
 
-6. **Verify navigation with `url` / `title`.** After clicking a link or submitting a form, confirm you landed on the expected page.
+6. **Use `fill` not `type` for form fields.** `fill` clears existing content first, which is almost always what you want. `type` appends to existing content.
 
-7. **Save auth state for reuse.** After logging in, use `cloudrouter browser state-save <id> /tmp/auth.json` to persist cookies/storage. Reload with `state-load` in future sessions.
+7. **Wait after navigation.** After clicking a link or submitting a form, use `cloudrouter browser wait <id> 2000` or wait for a specific element before snapshotting to ensure the page has fully loaded.
 
-8. **Fall back to semantic locators.** If a page is highly dynamic and refs keep going stale, use `cloudrouter browser find <id> text "Submit" click` instead of refs.
+8. **Verify navigation with `url` / `title`.** After clicking a link or submitting a form, confirm you landed on the expected page.
 
-> **Alternative:** You can also run agent-browser directly via exec: `cloudrouter exec <id> "ab snapshot -i"`. The `cloudrouter browser` commands are wrappers around `ab` (agent-browser) which is pre-installed in every sandbox.
+9. **Save auth state for reuse.** After logging in, use `cloudrouter browser state-save <id> /tmp/auth.json` to persist cookies/storage. Reload with `state-load` in future sessions.
+
+10. **Fall back to semantic locators.** If a page is highly dynamic and refs keep going stale, use `cloudrouter browser find <id> text "Submit" click` instead of refs.
+
+> **Note:** `cloudrouter browser` commands run agent-browser inside the sandbox via SSH. Always use `cloudrouter browser` commands for browser automation.
 
 ## Sandbox IDs
 
