@@ -530,7 +530,7 @@ cloudrouter resume cr_abc123          # Resume where you left off
    - Use `--seconds <N>` to set a custom duration (default is 3600 = 1 hour). **Do NOT use `--timeout`** — that flag does not exist on `extend`.
    - Example: `cloudrouter extend cr_abc123 --seconds 1800` extends by 30 minutes.
 
-3. **Stop (pause), don't delete, by default.** Prefer `cloudrouter stop <id>` over `cloudrouter delete <id>` unless the sandbox is clearly disposable (e.g., a quick test that produced no artifacts). Stopped sandboxes can be resumed with `cloudrouter resume <id>`; deleted ones are gone forever.
+3. **Stop (pause), don't delete, by default.** Prefer `cloudrouter stop <id>` over `cloudrouter delete <id>` unless the sandbox is clearly disposable (e.g., a quick test that produced no artifacts). Stopped sandboxes can be resumed with `cloudrouter resume <id>`; deleted ones are gone forever. If `cloudrouter stop` fails (the VM may have died), the sandbox is likely already dead. You can use `cloudrouter delete <id>` to clean it up if the user needs sandbox slots freed, but don't delete proactively — only when the user needs more space or explicitly asks.
 
 4. **Clean up when you're done.** When your task is complete and the user no longer needs the sandbox, stop it. Don't leave sandboxes running indefinitely — they count toward the concurrency limit.
 
@@ -610,6 +610,7 @@ Frontend: https://5173-xxx.e2b.app   <- WRONG: publicly accessible, no auth
 | `pdf` command saves to remote path | File saves inside the sandbox (e.g. `/tmp/page.pdf`). Use `cloudrouter download` to get it locally |
 | `storage-local <id> key` shows "Done" not the value | Use `eval <id> "localStorage.getItem('key')"` to reliably get a specific localStorage value |
 | Stale ref error after DOM change | Always re-snapshot after clicks/form submits. Error says "timed out" — means ref is stale |
+| `cloudrouter stop` fails / sandbox unreachable | The VM likely died. Use `cloudrouter delete <id>` to clean it up if you need sandbox slots freed |
 | `create-next-app` hangs via `ssh` | Interactive prompts don't work in `ssh`. Use `pty` for interactive installers, or pipe input |
 
 ## Global Flags
