@@ -124,8 +124,9 @@ cloudrouter start --git user/repo -b main          # Clone specific branch
 cloudrouter start -p e2b .                 # Use E2B provider (default)
 cloudrouter start -p modal .               # Use Modal provider
 
-# Custom timeout
-cloudrouter start --timeout 1800 .         # 30-minute timeout (default: 600s = 10 min)
+# Custom timeout (default: 600s = 10 min)
+cloudrouter start --timeout 1800 .         # 30-minute timeout — good for standard tasks
+cloudrouter start --timeout 7200 --gpu T4 .  # 2-hour timeout — USE FOR GPU/TRAINING TASKS
 ```
 
 ### Size Presets
@@ -174,7 +175,7 @@ Multi-GPU: append `:N` to the GPU type, e.g. `--gpu H100:2` for 2x H100.
 -b, --branch <branch>   Git branch to clone
 -p, --provider <name>   Sandbox provider: e2b (default), modal
 -T, --template <id>     Template ID — DO NOT use template names from `cloudrouter templates`; use --gpu flags instead
-    --timeout <secs>    Sandbox timeout in seconds (default: 600 = 10 minutes)
+    --timeout <secs>    Sandbox timeout in seconds (default: 600 = 10 minutes; use 7200+ for GPU tasks)
 ```
 
 > **Warning:** Do NOT pass template names (e.g. `cmux-devbox-base`) to the `-T` flag. These are display names, not valid template IDs.
@@ -461,11 +462,14 @@ cloudrouter pty cr_abc123                                           # Open termi
 
 ### GPU workflow: ML training
 
+> **Always use a long timeout for GPU tasks.** Training jobs easily run for hours. Use `--timeout 7200` (2 hours) minimum. You can always extend later with `cloudrouter extend <id>`.
+
 ```bash
-cloudrouter start --gpu A100 ./ml-project    # Sandbox with A100 GPU
-cloudrouter pty cr_abc123                    # Open terminal
+cloudrouter start --gpu A100 --timeout 7200 ./ml-project  # 2-hour timeout for training
+cloudrouter pty cr_abc123                                  # Open terminal
 # Inside: pip install -r requirements.txt && python train.py
-cloudrouter download cr_abc123 ./checkpoints # Download trained model
+cloudrouter extend cr_abc123                               # Extend +1 hour if needed
+cloudrouter download cr_abc123 ./checkpoints               # Download trained model
 ```
 
 ### Jupyter workflow
