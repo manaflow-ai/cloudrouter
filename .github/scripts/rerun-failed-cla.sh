@@ -616,13 +616,16 @@ if ! candidate_list_json="$(jq -c \
             run_binds_to_pr
           )
       ]
+      # Recency is the selection contract. Binding mode is only a tie-breaker,
+      # because a newer base-bound fallback is safer to retry than an older
+      # populated association that may belong to a stale workflow generation.
       | sort_by([
+          .created_at,
+          .id,
           if ((.pull_requests | type) == "array" and (.pull_requests | length) > 0) then 3
           elif (.head_repository | type) == "object" and .head_sha == $base_sha then 2
           elif .head_sha == $sha then 1
-          else 0 end,
-          .created_at,
-          .id
+          else 0 end
         ])
     ' <<<"${runs_json}")"; then
   fail "Could not validate CLA workflow run data"
